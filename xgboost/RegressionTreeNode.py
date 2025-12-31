@@ -2,30 +2,30 @@ from __future__ import annotations
 import numpy as np
 
 class RegressionTreeNode:
-    def __init__(self, residuals: np.ndarray, _lambda: int):
+    def __init__(self, residuals: np.ndarray, _lambda: int, depth: int=1):
         """
         Initializes the node along with the residuals, similarity, and gain
 
         Args:
             residuals (np.ndarray): The residuals of the data
-            _lambda (int): The lambda parameter
+            _lambda   (int):        Regularization parameter (default to 0)
+            depth     (int):        The depth of the node within the tree (default to 1)
         """
 
         # From the data
         self._lambda = _lambda
         self.residuals = np.sort(residuals)
+        self.depth = depth
 
         # Calculated values
         self.similarity = self.calculate_similarity(self.residuals)
         self.gain = 0
         self.threshold = 0
+        self.output = float('inf')
 
         # Children
         self.left = None
         self.right = None
-
-        # Create children
-        self.create_children()
 
     def calculate_similarity(self, residuals: np.ndarray) -> float:
         """
@@ -44,6 +44,15 @@ class RegressionTreeNode:
 
         return np.sum(residuals) ** 2 / (len(residuals) + self._lambda)
 
+    def calculate_output(self, residuals: np.ndarray) -> float:
+        """
+        Calculate the output using the residuals and the lambda
+
+        Defined as
+        sum of residuals / (number of residuals + lambda)
+        """
+
+        return np.sum(residuals) / (len(residuals) + self._lambda)
 
     def create_children(self) -> None:
         """
@@ -52,6 +61,9 @@ class RegressionTreeNode:
 
         # Not enough residuals to split
         if len(self.residuals) < 2:
+            # Update output as this is a leaf node
+            self.output = self.calculate_output(self.residuals)
+
             return
 
         # Determine highest gain and corresponding split index
@@ -78,29 +90,35 @@ class RegressionTreeNode:
         self.threshold = (self.residuals[split_index] + self.residuals[split_index - 1]) / 2
 
         # Create children using split index
-        self.left = RegressionTreeNode(self.residuals[:split_index], self._lambda)
-        self.right = RegressionTreeNode(self.residuals[split_index:], self._lambda)
+        self.left = RegressionTreeNode(self.residuals[:split_index], self._lambda, self.depth + 1)
+        self.right = RegressionTreeNode(self.residuals[split_index:], self._lambda, self.depth + 1)
 
     """
     GETTER METHODS
     """
-    def get_similarity(self) -> float:
+    def get_residuals(self) -> np.ndarray:
         """
-        Returns the similarity of the node
+        Returns the residuals of the node
         """
-        return self.similarity
+        return self.residuals
 
-    def get_gain(self) -> float:
+    def get_lambda(self) -> int:
         """
-        Returns the gain of the node
+        Returns the lambda of the node
         """
-        return self.gain
+        return self._lambda
 
-    def get_threshold(self) -> float:
+    def get_depth(self) -> int:
         """
-        Returns the threshold of the node
+        Returns the depth of the node
         """
-        return self.threshold
+        return self.depth
+
+    def get_output(self) -> float:
+        """
+        Returns the output of the node
+        """
+        return self.output
 
     def get_left(self) -> RegressionTreeNode | None:
         """
@@ -115,13 +133,34 @@ class RegressionTreeNode:
         return self.right
 
     """
+    SETTER METHODS
+    """
+    def set_output(self, output: float) -> None:
+        """
+        Sets the output of the node
+
+        Args:
+            output (float): The output to set
+        """
+        self.output = output
+
+    """
     Overridden methods
     """
     def __str__(self) -> str:
         """
         Returns a string representation of the node
         """
-        return f"Node with {len(self.residuals)} residuals, similarity {self.similarity}, gain {self.gain}, threshold {self.threshold}"
+        return f"""
+Regression Tree Node
+    Depth: {self.depth}
+    Similarity: {self.similarity}
+    Gain: {self.gain}
+    Threshold: {self.threshold}
+    Output: {self.output}
+
+    Residuals: {self.residuals}
+        """
 
     def __repr__(self) -> str:
         """
