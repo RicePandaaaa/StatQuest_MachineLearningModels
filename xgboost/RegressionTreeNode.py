@@ -2,24 +2,29 @@ from __future__ import annotations
 import numpy as np
 
 class RegressionTreeNode:
-    def __init__(self, residuals: np.ndarray, _lambda: int, depth: int=1):
+    def __init__(self, x_data: np.ndarray, y_data: np.ndarray, predictions: np.ndarray, _lambda: int, depth: int=1):
         """
         Initializes the node along with the residuals, similarity, and gain
 
         Args:
-            residuals (np.ndarray): The residuals of the data
-            _lambda   (int):        Regularization parameter (default to 0)
-            depth     (int):        The depth of the node within the tree (default to 1)
+            x_data      (np.ndarray): The x data
+            y_data      (np.ndarray): The y data
+            predictions (np.ndarray): Initial predictions (of y values)
+            _lambda     (int):        Regularization parameter (default to 0)
+            depth       (int):        The depth of the node within the tree (default to 1)
         """
 
         # From the data
+        self.x_data = x_data
+        self.y_data = y_data
+        self.predictions = predictions
         self._lambda = _lambda
-        self.residuals = np.sort(residuals)
+        self.residuals = self.predictions - self.y_data
         self.depth = depth
 
         # Calculated values
         self.similarity = self.calculate_similarity(self.residuals)
-        self.gain = 0
+        self.gain = float('inf')
         self.threshold = 0
         self.output = float('inf')
 
@@ -87,11 +92,24 @@ class RegressionTreeNode:
 
         # Update the threshold and gain
         self.gain = best_gain
-        self.threshold = (self.residuals[split_index] + self.residuals[split_index - 1]) / 2
+        self.threshold = (self.x_data[split_index] + self.x_data[split_index - 1]) / 2
 
         # Create children using split index
-        self.left = RegressionTreeNode(self.residuals[:split_index], self._lambda, self.depth + 1)
-        self.right = RegressionTreeNode(self.residuals[split_index:], self._lambda, self.depth + 1)
+        self.left = RegressionTreeNode(self.x_data[:split_index], self.y_data[:split_index], self.predictions[:split_index], self._lambda, self.depth + 1)
+        self.right = RegressionTreeNode(self.x_data[split_index:], self.y_data[split_index:], self.predictions[split_index:], self._lambda, self.depth + 1)
+
+    def condense(self) -> None:
+        """
+        Condenses the node from being a branch to a leaf node
+        """
+
+        # Remove the children
+        self.left = None
+        self.right = None
+
+        # Update the output
+        self.output = self.calculate_output(self.residuals)
+        
 
     """
     GETTER METHODS
@@ -113,6 +131,12 @@ class RegressionTreeNode:
         Returns the depth of the node
         """
         return self.depth
+
+    def get_gain(self) -> float:
+        """
+        Returns the gain of the node
+        """
+        return self.gain
 
     def get_output(self) -> float:
         """
@@ -143,6 +167,18 @@ class RegressionTreeNode:
             output (float): The output to set
         """
         self.output = output
+
+    def set_left(self, left: RegressionTreeNode | None) -> None:
+        """
+        Sets the left child of the node
+        """
+        self.left = left
+
+    def set_right(self, right: RegressionTreeNode | None) -> None:
+        """
+        Sets the right child of the node
+        """
+        self.right = right
 
     """
     Overridden methods
