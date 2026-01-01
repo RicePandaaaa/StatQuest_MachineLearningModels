@@ -24,8 +24,8 @@ class RegressionTreeNode:
 
         # Calculated values
         self.similarity = self.calculate_similarity(self.residuals)
-        self.gain = float('inf')
-        self.threshold = 0
+        self.gain = float('-inf')
+        self.threshold = float('inf')
         self.output = float('inf')
 
         # Children
@@ -107,9 +107,12 @@ class RegressionTreeNode:
         self.left = None
         self.right = None
 
+        # Remove the gain and threshold
+        self.gain = float('-inf')
+        self.threshold = float('inf')
+
         # Update the output
         self.output = self.calculate_output(self.residuals)
-        
 
     """
     GETTER METHODS

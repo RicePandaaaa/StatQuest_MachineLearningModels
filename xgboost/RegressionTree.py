@@ -31,6 +31,21 @@ class RegressionTree:
         # Grow the tree
         self.grow_tree()
 
+    def sort_data(self) -> None:
+        """
+        Sorts the data by the x data
+
+        """
+
+        # Sort the x data
+        self.x_data = np.sort(self.x_data)
+
+        # Sort the y data
+        self.y_data = self.y_data[np.argsort(self.x_data)]
+
+        # Sort the predictions
+        self.predictions = self.predictions[np.argsort(self.x_data)]
+
     def create_root(self) -> RegressionTreeNode:
         """
         Creates the root node of the tree
@@ -81,17 +96,24 @@ class RegressionTree:
         if not left_child and not right_child:
             return
 
-        # Edge case 2: One of the two children has children (protected ancestor)
-        if left_child and (left_child.get_left() or left_child.get_right()):
-            return
-        if right_child and (right_child.get_left() or right_child.get_right()):
-            return
+        # If there are children, check if any are branches (children with children) since they need to be pruned first if needed
+        if left_child:
+            self.prune_tree(left_child)
+        if right_child:
+            self.prune_tree(right_child)
 
-        # At this point, the node has two leaf children and is a valid candidate for pruning
+        # At this point, if either children are still branches, the node is a protected ancestor and cannot be pruned
+        # NOTE: a branch with children will ALWAYS have two children
+
+        # Left child is a branch
+        if left_child and (left_child.get_left() and left_child.get_right()):
+            return
+        # Right child is a branch
+        if right_child and (right_child.get_left() and right_child.get_right()):
+            return
 
         # If the gain is less than the gamma parameter, prune the branch by condensing the node into a leaf node
-        if node.get_gain() < self.gamma:
+        if node.get_gain() != float('-inf') and node.get_gain() < self.gamma:
             node.condense()
-            
 
         
