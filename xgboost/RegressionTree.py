@@ -31,6 +31,13 @@ class RegressionTree:
         # Grow the tree
         self.grow_tree()
 
+        # Prune the tree
+        self.prune_tree(self.root)
+
+        # Check if the root itself requires pruning
+        if self.root.get_gain() != float('-inf') and self.root.get_gain() < self.gamma:
+            self.root.condense()
+
     def sort_data(self) -> None:
         """
         Sorts the data by the x data
@@ -116,4 +123,49 @@ class RegressionTree:
         if node.get_gain() != float('-inf') and node.get_gain() < self.gamma:
             node.condense()
 
-        
+    def predict(self, x: float) -> float:
+        """
+        Predicts the y value for a given x value
+
+        Args:
+            x (float): The x value to predict the y value for
+
+        Returns:
+            float: The predicted y value
+        """
+
+        # Start at the root
+        current_node = self.root
+
+        while current_node:
+            # If the node is a branch, send the prediction down the correct path
+            if current_node.get_threshold() != float('inf'):
+                # Left is for values less than the threshold
+                if x < current_node.get_threshold():
+                    current_node = current_node.get_left()
+                # Right is for values greater than or equal to the threshold
+                else:
+                    current_node = current_node.get_right()
+            # If the node is a leaf, return the output
+            else:
+                return current_node.get_output()
+
+        # If the tree is empty, return infinity
+        return float('inf')
+
+    def get_new_predictions(self) -> np.ndarray:
+        """
+        Gets the new predictions for the data
+
+        Formula: 
+        prediction_new_i = prediction_i + learning_rate * (prediction_i - y_i)
+
+        Args:
+            None
+
+        Returns:
+            np.ndarray: The new predictions
+        """
+
+        # Return the new predictions
+        return self.predictions + self.learning_rate * (self.predictions - self.y_data)

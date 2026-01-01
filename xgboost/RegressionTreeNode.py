@@ -19,7 +19,7 @@ class RegressionTreeNode:
         self.y_data = y_data
         self.predictions = predictions
         self._lambda = _lambda
-        self.residuals = self.predictions - self.y_data
+        self.residuals = self.y_data - self.predictions
         self.depth = depth
 
         # Calculated values
@@ -158,6 +158,12 @@ class RegressionTreeNode:
         Returns the right child of the node
         """
         return self.right
+
+    def get_threshold(self) -> float:
+        """
+        Returns the threshold of the node
+        """
+        return self.threshold
 
     """
     SETTER METHODS
